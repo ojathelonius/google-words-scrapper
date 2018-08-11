@@ -19,6 +19,7 @@ Launch the app by running :
 * Is there is no highlight on the cover, find the biggest highlighted text on the next pages
 * Proper error handling
 * Use a Promise based rimraf
+* Allow FS to create directories if missing
 
 ##  History
 * Working with Axiom and JSDom didn't lead too far as some of Google's Javascript wasn't properly executed, with the following stacktrace :
