@@ -2,3 +2,6 @@
 yarn-error.log
 .vscode/*
 test.html
+result
+temp
+build

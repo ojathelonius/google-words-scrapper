@@ -11,10 +11,8 @@
   "dependencies": {
     "axios": "^0.18.0",
     "jsdom": "^11.12.0",
-    "node-phantom": "^0.2.5",
     "phantom": "^6.0.3",
-    "xmldom": "^0.1.27",
-    "xmlserializer": "^0.6.1",
-    "zombie": "^6.1.2"
+    "sharp": "^0.20.5",
+    "xmldom": "^0.1.27"
   }
 }
