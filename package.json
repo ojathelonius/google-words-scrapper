@@ -1,8 +1,8 @@
 {
-  "name": "bookgrab",
-  "version": "1.0.0",
+  "name": "words-scrapper",
+  "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "scrap.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,6 +12,7 @@
     "axios": "^0.18.0",
     "jsdom": "^11.12.0",
     "phantom": "^6.0.3",
+    "rimraf": "^2.6.2",
     "sharp": "^0.20.5",
     "xmldom": "^0.1.27"
   }

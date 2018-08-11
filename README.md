@@ -14,11 +14,19 @@ Launch the app by running :
 
 ## TODO
 * Use [phantom-pool](https://github.com/binded/phantom-pool) to optimize the browser instances between each HTTP request
-* Provide a way to input a word to search 
+* Provide a way to input a word to search with an UI
 * Find a better way to target interesting DOM elements to locate the word on the cover
+* Is there is no highlight on the cover, find the biggest highlighted text on the next pages
+* Proper error handling
+* Use a Promise based rimraf
 
 ##  History
 * Working with Axiom and JSDom didn't lead too far as some of Google's Javascript wasn't properly executed, with the following stacktrace :
 ```javascript
 Error: Uncaught [TypeError: Cannot read property 'closure_lm_485376' of null]
 ```
+
+## Scrapping caveats
+* Full size cover picture does not always exist, and its low res version is unsufficient to extract an image properly
+* Google references pages as well as book covers, and applies OCR on these, thus results could actually be extracted from pages rather than the cover.
+* Some images can be cropped too thinly due to improper highlighting, while other can actually include some other text.
