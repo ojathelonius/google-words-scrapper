@@ -10,23 +10,50 @@ const sharp = require('sharp');
 const axios = require('axios');
 const path = require('path');
 const rimraf = require('rimraf');
+/* Required to allow deleting temp files after use */
 sharp.cache(false);
 
+
 (async function () {
+    searchForKeywords(['Omar','ma','tuer']);
+})();
+
+async function searchForKeywords(keywords) {
     console.log('Scrapping started, deleting previous results...')
     rimraf('./result/*', function () {
         console.log('Previous results deleted.');
     });
-    const books = await axios('https://www.googleapis.com/books/v1/volumes?q=quilting');
-    for (const [index, value] of books.data.items.entries()) {
-        console.log('Scrapping page number ' + index + ' : ' + value.volumeInfo.previewLink);
-        await getWord(value.volumeInfo.previewLink, index);
+    for (keyword of keywords) {
+        console.log('Searching for ' + keyword + '...')
+        await searchBooks(keyword);
     }
-    console.log('Scrapping done.')
+    console.log('Scrapping done !');
+}
 
-})();
+/**
+ * Search books based on a given keyword
+ * @param {String} keyword 
+ */
+async function searchBooks(keyword) {
+    const books = await axios('https://www.googleapis.com/books/v1/volumes?q=' + keyword);
+    for (const [index, value] of books.data.items.entries()) {
+        console.log('Scrapping book number ' + index + ' : ' + value.volumeInfo.previewLink);
+        let wordFound = await getWord(value.volumeInfo.previewLink, keyword, index);
+        if (wordFound) {
+            return;
+        }
+    }
 
-async function getWord(previewUrl, index) {
+}
+
+/**
+ * Get word as a picture 
+ * @param {String} previewUrl 
+ * @param {String} keyword 
+ * @param {Number} index 
+ */
+async function getWord(previewUrl, keyword, index) {
+    let success = false;
     const instance = await phantom.create();
     const page = await instance.createPage();
 
@@ -51,23 +78,27 @@ async function getWord(previewUrl, index) {
             await sharp(temp_path)
                 .resize(imgWidth)
                 .extract(highlightBox)
-                .toFile('./result/result_' + index + '.jpg');
+                .toFile('./result/' + keyword + '.jpg');
+            success = true;
 
         } catch (err) {
+            console.log(err);
             console.log('Error: cannot resize or crop the picture.')
         }
 
-        try {
-            rimraf('./temp/temp_' + index + '.jpg', function () {
-                console.log('Temporary file deleted.')
-            });
+        // try {
+        //     rimraf('./temp/temp_' + index + '.jpg', function () {
+        //         console.log('Temporary file deleted.')
+        //     });
 
-        } catch (err) {
-            console.log('Error: cannot resize or crop the picture.')
-        }
+        // } catch (err) {
+        //     console.log('Error: cannot resize or crop the picture.')
+        // }
 
     }
     await instance.exit();
+
+    return success;
 }
 
 /**
@@ -87,7 +118,7 @@ function writeLog(log, data) {
  * @param {String} path
  */
 async function downloadFrom(url, path) {
-
+    console.log('Downloading image from : ' + url);
     const response = await axios({
         method: 'GET',
         url: url,
@@ -106,6 +137,10 @@ async function downloadFrom(url, path) {
     })
 }
 
+/**
+ * Retrieve highlightbox position and properties
+ * @param {Page} page 
+ */
 async function getHighlightBox(page) {
     let highlightStyle;
 
