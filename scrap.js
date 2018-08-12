@@ -118,11 +118,20 @@ function writeLog(log, data) {
  * @param {String} path
  */
 async function downloadFrom(url, path) {
+
+    const initialRequest = await axios({
+        method: 'GET',
+        url: 'https://google.com'
+    })
+
     console.log('Downloading image from : ' + url);
     const response = await axios({
         method: 'GET',
         url: url,
-        responseType: 'stream'
+        responseType: 'stream',
+        headers: {
+            'Cookie': initialRequest.headers['set-cookie']
+        }
     })
 
     response.data.pipe(fs.createWriteStream(path))
