@@ -86,14 +86,14 @@ async function getWord(previewUrl, keyword, index) {
             console.log('Error: cannot resize or crop the picture.')
         }
 
-        // try {
-        //     rimraf('./temp/temp_' + index + '.jpg', function () {
-        //         console.log('Temporary file deleted.')
-        //     });
+        try {
+            rimraf('./temp/temp_' + index + '.jpg', function () {
+                console.log('Temporary file deleted.')
+            });
 
-        // } catch (err) {
-        //     console.log('Error: cannot resize or crop the picture.')
-        // }
+        } catch (err) {
+            console.log('Error: cannot resize or crop the picture.')
+        }
 
     }
     await instance.exit();
