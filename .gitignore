@@ -2,6 +2,6 @@
 yarn-error.log
 .vscode/*
 test.html
-result
-temp
+result/*.jpg
+temp/*.jpg
 build

@@ -1,8 +1,9 @@
 /**
- * Words Scrapper using PhantomJS, done quick and dirty
+ * Words Scrapper using PhantomJS
  * This lets Google do the hard OCR work, and just retrieves the result !
- * 
+ *
  */
+
 
 const phantom = require('phantom');
 const fs = require('fs');
@@ -14,159 +15,128 @@ const rimraf = require('rimraf');
 sharp.cache(false);
 
 
-(async function () {
-    searchForKeywords(['Omar','ma','tuer']);
-})();
+const GOOGLE_API_URL = 'https://www.googleapis.com/books/v1/volumes?q=';
 
-async function searchForKeywords(keywords) {
-    console.log('Scrapping started, deleting previous results...')
-    rimraf('./result/*', function () {
-        console.log('Previous results deleted.');
-    });
-    for (keyword of keywords) {
-        console.log('Searching for ' + keyword + '...')
-        await searchBooks(keyword);
+class WordScrapper {
+
+    constructor() {
+
     }
-    console.log('Scrapping done !');
-}
 
-/**
- * Search books based on a given keyword
- * @param {String} keyword 
- */
-async function searchBooks(keyword) {
-    const books = await axios('https://www.googleapis.com/books/v1/volumes?q=' + keyword);
-    for (const [index, value] of books.data.items.entries()) {
-        console.log('Scrapping book number ' + index + ' : ' + value.volumeInfo.previewLink);
-        let wordFound = await getWord(value.volumeInfo.previewLink, keyword, index);
-        if (wordFound) {
-            return;
+    async init() {
+        console.log('Initializing...');
+
+        // Initialize PhantomJS instance
+        this.instance = await phantom.create();
+
+        // Retrieve Google NID cookie
+        this.initialRequest = await axios({
+            method: 'GET',
+            url: 'https://google.com',
+        });
+
+        console.log('Complete.');
+    }
+
+    async search(keywords) {
+        for (const keyword of keywords) {
+            console.log(`Searching for ${keyword}...`);
+            await this.searchKeyword(keyword);
         }
     }
 
-}
+    async searchKeyword(keyword) {
+        const books = await axios(GOOGLE_API_URL + keyword);
+        for (const [index, value] of books.data.items.entries()) {
+            console.log(`Scrapping book number ${index} : ${value.volumeInfo.previewLink}`);
+            const wordFound = await this.retrieveKeyword(value.volumeInfo.previewLink, keyword, index);
+            if (wordFound) {
+                return;
+            }
+        }
+    }
 
-/**
- * Get word as a picture 
- * @param {String} previewUrl 
- * @param {String} keyword 
- * @param {Number} index 
- */
-async function getWord(previewUrl, keyword, index) {
-    let success = false;
-    const instance = await phantom.create();
-    const page = await instance.createPage();
+    async retrieveKeyword(url, keyword, index) {
+        let success = false;
 
-    const status = await page.open(previewUrl);
-    const testDom = await page.evaluate();
-    const img = await page.evaluate(function () {
-        return document.querySelector('.pageImageDisplay > div > img');
-    })
 
-    const imgSrc = img.src;
-    const imgWidth = parseInt(img.width);
+        const page = await this.instance.createPage();
+        const status = await page.open(url);
+        const img = await page.evaluate(function () { return document.querySelector('.pageImageDisplay > div > img') });
 
-    const temp_path = path.resolve(__dirname, 'temp', 'temp_' + index + '.jpg');
+        const imgSrc = img.src;
+        const imgWidth = parseInt(img.width);
 
-    const highlightBox = await getHighlightBox(page);
+        const temp_path = path.resolve(__dirname, 'temp', `temp_${index}.jpg`);
 
-    if (highlightBox) {
-        await downloadFrom(imgSrc, temp_path);
+        const highlightBox = await this.getHighlightBox(page);
 
-        try {
-            /* Resize image to fit Google's, then extract the highlighted part */
-            await sharp(temp_path)
-                .resize(imgWidth)
-                .extract(highlightBox)
-                .toFile('./result/' + keyword + '.jpg');
-            success = true;
+        if (highlightBox) {
+            await this.downloadFrom(imgSrc, temp_path);
 
-        } catch (err) {
-            console.log(err);
-            console.log('Error: cannot resize or crop the picture.')
+            try {
+                // Resize image to fit Google's, then extract the highlighted part
+                await sharp(temp_path)
+                    .resize(imgWidth)
+                    .extract(highlightBox)
+                    .toFile(`./result/${keyword}.jpg`);
+                success = true;
+            } catch (err) {
+                console.log('Error: cannot resize or crop the picture.');
+            }
+
+            try {
+                rimraf(`./temp/temp_${index}.jpg`, () => {
+                    console.log('Temporary file deleted.');
+                });
+            } catch (err) {
+                console.log('Error: cannot resize or crop the picture.');
+            }
         }
 
-        try {
-            rimraf('./temp/temp_' + index + '.jpg', function () {
-                console.log('Temporary file deleted.')
+        return success;
+    }
+
+    async downloadFrom(url, path) {
+        const response = await axios({
+            method: 'GET',
+            url,
+            responseType: 'stream',
+            headers: {
+                Cookie: this.initialRequest.headers['set-cookie'],
+            },
+        });
+
+        response.data.pipe(fs.createWriteStream(path));
+
+        return new Promise((resolve, reject) => {
+            response.data.on('end', () => {
+                resolve();
             });
+            response.data.on('error', () => {
+                reject();
+            });
+        });
+    }
 
+    async getHighlightBox(page) {
+        let highlightStyle;
+
+        try {
+            const highlight = await page.evaluate(function () { return document.querySelectorAll('.pageImageDisplay')[0].querySelectorAll('div')[7].querySelector('div') });
+
+            highlightStyle = {
+                height: parseInt(highlight.style.height),
+                width: parseInt(highlight.style.width),
+                left: parseInt(highlight.style.left),
+                top: parseInt(highlight.style.top),
+            };
         } catch (err) {
-            console.log('Error: cannot resize or crop the picture.')
+            console.log('Error: chances are there is no highlighted text on this cover.');
         }
 
+        return highlightStyle;
     }
-    await instance.exit();
-
-    return success;
 }
 
-/**
- * Write any data to any file
- * @param {String} log 
- * @param {String} data 
- */
-function writeLog(log, data) {
-    fs.writeFile(log, data, function (err) {
-        console.log(err);
-    });
-}
-
-/**
- * Fetch image at URL
- * @param {String} url 
- * @param {String} path
- */
-async function downloadFrom(url, path) {
-
-    const initialRequest = await axios({
-        method: 'GET',
-        url: 'https://google.com'
-    })
-
-    console.log('Downloading image from : ' + url);
-    const response = await axios({
-        method: 'GET',
-        url: url,
-        responseType: 'stream',
-        headers: {
-            'Cookie': initialRequest.headers['set-cookie']
-        }
-    })
-
-    response.data.pipe(fs.createWriteStream(path))
-
-    return new Promise((resolve, reject) => {
-        response.data.on('end', () => {
-            resolve();
-        })
-        response.data.on('error', () => {
-            reject();
-        })
-    })
-}
-
-/**
- * Retrieve highlightbox position and properties
- * @param {Page} page 
- */
-async function getHighlightBox(page) {
-    let highlightStyle;
-
-    try {
-        /* Retrieve word highlight */
-        const highlight = await page.evaluate(function () {
-            return document.querySelectorAll('.pageImageDisplay')[0].querySelectorAll('div')[7].querySelector('div');
-        })
-        /* And its position */
-        highlightStyle = {
-            height: parseInt(highlight.style.height),
-            width: parseInt(highlight.style.width),
-            left: parseInt(highlight.style.left),
-            top: parseInt(highlight.style.top)
-        }
-    } catch (err) {
-        console.log('Error: chances are there is no highlighted text on this cover.')
-    }
-    return highlightStyle;
-}
+module.exports = WordScrapper;

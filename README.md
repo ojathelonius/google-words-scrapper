@@ -20,7 +20,8 @@ Launch the app by running :
 * Proper error handling
 * Use a Promise based rimraf
 * Allow FS to create directories if missing
-* Use the same NID cookies for further requests
+* Proper linting/babel
+* Differenciate exposed/private functions and document them
 
 ##  History
 * Working with Axiom and JSDom didn't lead too far as some of Google's Javascript wasn't properly executed, with the following stacktrace :
