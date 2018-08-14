@@ -8,15 +8,22 @@ It just scrapes the data from the page, and extracts the part corresponding to t
 **Words-scrapper** uses [sharp](https://github.com/lovell/sharp) to resize and crop the images.  
 As a native NodeJS module, it may require some additional build toold such as Visual C++ libraries and python on Windows.
 
-### Run
-Launch the app by running :
-`node scrap.js`
+### How to use
+```javascript
+const WordScrapper = require('./scrap.js');
+
+const wordScrapper = new WordScrapper();
+wordScrapper.init().then(() => {
+  wordScrapper.search(['quilting']);
+});
+```
+
 
 ## TODO
 * Use [phantom-pool](https://github.com/binded/phantom-pool) to optimize the browser instances between each HTTP request
 * Provide a way to input a word to search with an UI
 * Find a better way to target interesting DOM elements to locate the word on the cover
-* Is there is no highlight on the cover, find the biggest highlighted text on the next pages
+* Prioritize covers over normal pages (use querySelectorAll and iterate over the nodeList)
 * Proper error handling
 * Use a Promise based rimraf
 * Allow FS to create directories if missing
@@ -34,3 +41,4 @@ Error: Uncaught [TypeError: Cannot read property 'closure_lm_485376' of null]
 * Full size cover picture does not always exist, and its low res version is unsufficient to extract an image properly
 * Google references pages as well as book covers, and applies OCR on these, thus results could actually be extracted from pages rather than the cover.
 * Some images can be cropped too thinly due to improper highlighting, while other can actually include some other text.
+* I cannot seem to use concurrent PhantomJS instances performance-wise, as I run out of memory doing so.
