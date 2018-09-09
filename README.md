@@ -7,8 +7,6 @@ It just scrapes the data from the page, and extracts the part corresponding to t
 
 Inputting "I am the one who knocks" yields the following result :
 
-https://i.imgur.com/Wcdd2RC.jpg
-
 ![Scrapping result](https://i.imgur.com/Wcdd2RC.jpg "Result")
 
 
