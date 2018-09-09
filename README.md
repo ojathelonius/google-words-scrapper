@@ -3,6 +3,15 @@
 This NodeJS application retrieves words as a picture from book covers, using the Google Books API and its integrated OCR.
 It just scrapes the data from the page, and extracts the part corresponding to the researched term from the book.
 
+### Example
+
+Inputting "I am the one who knocks" yields the following result :
+
+https://i.imgur.com/Wcdd2RC.jpg
+
+![Scrapping result](https://i.imgur.com/Wcdd2RC.jpg "Result")
+
+
 ## Getting started
 ### Dependencies
 **Words-scrapper** uses [sharp](https://github.com/lovell/sharp) to resize and crop the images.  
